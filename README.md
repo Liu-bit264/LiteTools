@@ -1,6 +1,8 @@
 # LiteTools — 嵌入式工程工具集
 
-LiteBootLoader 家族的通用工程工具，独立建仓（与固件仓解耦的项目卫生要求）：
+简体中文 | [English](README.en.md)
+
+LiteBootLoader 家族的通用工程工具：
 
 - [LiteBootLoader](../LiteBootLoader) —— STM32 BootLoader 框架（工具的主要使用方）
 - [LiteBootUpgrader](../LiteBootUpgrader) —— 串口升级上位机
@@ -56,7 +58,7 @@ uv run --python 3.12 ../LiteTools/uvprojx/chipfill.py \
 
 占位符 `{{chip.a.b}}`（整值引用，列表/对象展开）与 `{"$chip": "a.b"}`（容器展开）；
 派生 `derived.cpu_bootloader/cpu_app`（Keil Cpu 字符串：地址 8 位十六进制、尺寸去前导零）。
-详细字段约定见主仓 `docs/design.md` ADR-015 与 `docs/porting_guide.md` §2。
+详细字段约定见 LiteBootLoader 仓库 `docs/dev/design.md` ADR-015 与 `docs/porting_guide.md` §2。
 
 ## ICO 工具
 
