@@ -25,6 +25,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import os
 import re
 import shutil
 import sys
@@ -86,7 +87,14 @@ def validate_spec(spec) -> None:
         for gi, group in enumerate(target.get("groups") or []):
             if not isinstance(group, dict) or not str(group.get("name", "")).strip():
                 raise UvprojxGenerateError(f"targets[{index}].groups[{gi}] 缺少 name")
-            for fi, file in enumerate(group.get("files") or []):
+            files = group.get("files") or []
+            if not isinstance(files, list):
+                raise UvprojxGenerateError(
+                    f"targets[{index}].groups[{gi}].files 必须是数组")
+            for fi, file in enumerate(files):
+                if not isinstance(file, dict):
+                    raise UvprojxGenerateError(
+                        f"targets[{index}].groups[{gi}].files[{fi}] 必须是对象")
                 if not str(file.get("path", "")).strip():
                     raise UvprojxGenerateError(
                         f"targets[{index}].groups[{gi}].files[{fi}] 缺少 path")
@@ -484,8 +492,15 @@ def write_tree(tree: ET.ElementTree, dest: Path, backup: bool):
     if dest.exists() and backup:
         stamp = time.strftime("%Y%m%d-%H%M%S")
         backup_path = str(dest.with_name(dest.name + f".bak-{stamp}"))
+        serial = 1
+        while Path(backup_path).exists():
+            # 同秒多次写入不覆盖上一份备份（review 2026-09-27 P2）
+            backup_path = str(dest.with_name(dest.name + f".bak-{stamp}-{serial}"))
+            serial += 1
         shutil.copy2(dest, backup_path)
-    dest.write_bytes(data)
+    tmp = dest.with_name(dest.name + ".tmp")   # 先写临时文件再原子替换（review P3）
+    tmp.write_bytes(data)
+    os.replace(tmp, dest)
     return backup_path
 
 

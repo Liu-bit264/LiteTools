@@ -169,6 +169,27 @@ class UvprojxToolTest(unittest.TestCase):
         self.assertEqual(len(backups), 1)
         self.assertEqual(backups[0].read_bytes(), SAMPLE.encode("utf-8"))
 
+    def test_validate_spec_rejects_malformed_groups(self):
+        # review 2026-09-27 P2：畸形 group/file 结构收敛为生成错误而非 AttributeError
+        with self.assertRaises(uv_generator.UvprojxGenerateError):
+            uv_generator.validate_spec({"targets": [{"name": "t", "groups": [
+                {"name": "g", "files": ["not-a-dict"]}]}]})
+        with self.assertRaises(uv_generator.UvprojxGenerateError):
+            uv_generator.validate_spec({"targets": [{"name": "t", "groups": [
+                {"name": "g", "files": {"a": 1}}]}]})
+
+    def test_backup_not_overwritten_same_second(self):
+        # review 2026-09-27 P2：同秒连续两次写入，第一份备份不得被覆盖
+        out = self.dir / "b.uvprojx"
+        out.write_bytes(SAMPLE.encode("utf-8"))
+        uv_generator.update_project_file(
+            out, {"targets": [{"name": "bootloader", "c_defines": ["A"]}]}, backup=True)
+        uv_generator.update_project_file(
+            out, {"targets": [{"name": "bootloader", "c_defines": ["B"]}]}, backup=True)
+        backups = sorted(self.dir.glob("b.uvprojx.bak-*"))
+        self.assertEqual(len(backups), 2)
+        self.assertEqual(backups[0].read_bytes(), SAMPLE.encode("utf-8"))
+
     def test_update_target_not_found(self):
         out = self.dir / "nomatch.uvprojx"
         out.write_bytes(SAMPLE.encode("utf-8"))

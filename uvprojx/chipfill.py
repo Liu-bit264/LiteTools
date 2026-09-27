@@ -51,15 +51,42 @@ class ChipFillError(Exception):
     """清单或模板不合法、引用未定义。"""
 
 
+def _hex_field(container, key: str, what: str) -> None:
+    """清单字段存在性 + 十六进制字符串合法性（review 2026-09-27 P2：
+    畸形清单收敛为 ChipFillError，而非 KeyError/TypeError/ValueError 栈回溯）。"""
+    if not isinstance(container, dict) or key not in container:
+        raise ChipFillError(f"{what} 缺少字段: {key}")
+    v = container[key]
+    if not isinstance(v, str):
+        raise ChipFillError(f"{what}.{key} 必须是十六进制字符串，实际为 {type(v).__name__}")
+    try:
+        int(v, 16)
+    except ValueError:
+        raise ChipFillError(f"{what}.{key} 不是合法十六进制: {v!r}")
+
+
 def load_chip(path: str | Path) -> dict:
     p = Path(path)
     try:
         chip = json.loads(p.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise ChipFillError(f"读取芯片清单失败 {p}: {exc}") from exc
+    if not isinstance(chip, dict):
+        raise ChipFillError("芯片清单必须是 JSON 对象")
     for key in ("id", "device", "build", "memory", "partitions", "erase_units"):
         if key not in chip:
             raise ChipFillError(f"芯片清单缺少必需键: {key}")
+    mem = chip["memory"]
+    for key in ("flash_base", "flash_size", "sram_base", "sram_size"):
+        _hex_field(mem, key, "memory")
+    part = chip["partitions"]
+    app = part.get("app") if isinstance(part, dict) else None
+    _hex_field(app, "base", "partitions.app")
+    _hex_field(app, "size", "partitions.app")
+    dev = chip["device"]
+    for key in ("cputype", "cpu_clock", "endianness"):
+        if not isinstance(dev, dict) or not isinstance(dev.get(key), str):
+            raise ChipFillError(f"device.{key} 必须是字符串")
     chip["derived"] = {
         "cpu_bootloader": _compose_cpu(
             chip, chip["memory"]["flash_base"], chip["memory"]["flash_size"]),
@@ -73,13 +100,15 @@ def load_chip(path: str | Path) -> dict:
 def _compose_cpu(chip: dict, rom_base: str, rom_size: str) -> str:
     mem = chip["memory"]
     dev = chip["device"]
+    try:
+        sb, ss = int(mem["sram_base"], 16), int(mem["sram_size"], 16)
+        rb, rs = int(rom_base, 16), int(rom_size, 16)
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ChipFillError(f"CPU 串派生失败：内存/分区地址字段非法（{exc}）") from exc
 
     # Keil Cpu 字符串惯例：地址固定 8 位十六进制（0x08000000），尺寸去前导零（0x5000）
-    addr = lambda v: f"0x{int(v, 16):08X}"
-    size = lambda v: f"0x{int(v, 16):X}"
-
-    return (f"IRAM({addr(mem['sram_base'])},{size(mem['sram_size'])}) "
-            f"IROM({addr(rom_base)},{size(rom_size)}) "
+    return (f"IRAM(0x{sb:08X},{ss:X}) "
+            f"IROM(0x{rb:08X},{rs:X}) "
             f"CPUTYPE(\"{dev['cputype']}\") {dev['cpu_clock']} {dev['endianness']}")
 
 

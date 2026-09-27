@@ -115,10 +115,21 @@ def parse_ico_bytes(data: bytes, source: str = "<memory>") -> dict:
             blob = data[offset:offset + length]
             if blob[:8] == PNG_SIGNATURE:
                 image["format"] = "PNG"
-                image["png"] = _parse_png_header(blob)
+                png = _parse_png_header(blob)
+                image["png"] = png
+                if "error" in png:
+                    # 深度校验（review 2026-09-27 P3）：签名对但缺 IHDR 计入错误
+                    errors.append(f"条目 {index}: PNG 条目 {png['error']}")
             elif len(blob) >= 40:
                 image["format"] = "BMP(DIB)"
-                image["bmp"] = _parse_bmp_dib(blob)
+                bmp = _parse_bmp_dib(blob)
+                image["bmp"] = bmp
+                if "error" in bmp:
+                    errors.append(f"条目 {index}: BMP 条目 {bmp['error']}")
+                elif bmp.get("bi_size") not in (40, 108, 124) or bmp.get("bi_planes") != 1:
+                    errors.append(
+                        f"条目 {index}: BMP 头异常 bi_size={bmp.get('bi_size')} "
+                        f"bi_planes={bmp.get('bi_planes')}（应为 40/108/124 与 1）")
             else:
                 image["format"] = "unknown"
                 errors.append(f"条目 {index}: 数据不足以识别格式（{length} 字节）")

@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import os
 import shutil
 import struct
 import sys
@@ -186,8 +187,15 @@ def main(argv=None) -> int:
         if out.exists() and not args.no_backup:
             stamp = time.strftime("%Y%m%d-%H%M%S")
             backup_path = str(out.with_name(out.name + f".bak-{stamp}"))
+            serial = 1
+            while Path(backup_path).exists():
+                # 同秒多次写入不覆盖上一份备份（review 2026-09-27 P2）
+                backup_path = str(out.with_name(out.name + f".bak-{stamp}-{serial}"))
+                serial += 1
             shutil.copy2(out, backup_path)
-        out.write_bytes(data)
+        tmp = out.with_name(out.name + ".tmp")   # 先写临时文件再原子替换（review P3）
+        tmp.write_bytes(data)
+        os.replace(tmp, out)
     except IcoGenerateError as exc:
         print(f"[generator] 错误: {exc}", file=sys.stderr)
         return 1

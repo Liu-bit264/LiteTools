@@ -81,6 +81,20 @@ class IcoParserTest(unittest.TestCase):
         with self.assertRaises(ico_parser.IcoParseError):
             ico_parser.parse_ico_bytes(b"\x00\x00")
 
+    def test_garbage_bmp_entry_flagged(self):
+        # review 2026-09-27 P3：凑够 40B 的随机数据不再被判为合法 BMP
+        garbage = bytes(range(48))
+        data = make_ico_bytes([(16, 16, garbage)])
+        result = ico_parser.parse_ico_bytes(data)
+        self.assertTrue(any("BMP" in e for e in result["errors"]))
+
+    def test_png_missing_ihdr_flagged(self):
+        # review 2026-09-27 P3：PNG 签名对但缺 IHDR 计入错误
+        blob = b"\x89PNG\r\n\x1a\n" + b"\x00" * 32
+        data = make_ico_bytes([(16, 16, blob)])
+        result = ico_parser.parse_ico_bytes(data)
+        self.assertTrue(any("IHDR" in e for e in result["errors"]))
+
 
 class IcoGeneratorTest(unittest.TestCase):
     def setUp(self):
