@@ -106,9 +106,10 @@ def _compose_cpu(chip: dict, rom_base: str, rom_size: str) -> str:
     except (KeyError, TypeError, ValueError) as exc:
         raise ChipFillError(f"CPU 串派生失败：内存/分区地址字段非法（{exc}）") from exc
 
-    # Keil Cpu 字符串惯例：地址固定 8 位十六进制（0x08000000），尺寸去前导零（0x5000）
-    return (f"IRAM(0x{sb:08X},{ss:X}) "
-            f"IROM(0x{rb:08X},{rs:X}) "
+    # Keil Cpu 字符串惯例：地址固定 8 位十六进制（0x08000000），尺寸去前导零但保留
+    # 0x 前缀（0x5000）——前缀丢失会让 generator 的 _parse_cpu_memory 匹配失败
+    return (f"IRAM(0x{sb:08X},0x{ss:X}) "
+            f"IROM(0x{rb:08X},0x{rs:X}) "
             f"CPUTYPE(\"{dev['cputype']}\") {dev['cpu_clock']} {dev['endianness']}")
 
 
