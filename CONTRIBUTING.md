@@ -23,10 +23,15 @@ LiteTools/
 │   ├── chipfill.py        CSP 芯片清单填充器（chip.json + 模板 → spec/sct，ADR-015）
 │   ├── test_uvprojx.py    解析/生成往返等单测
 │   └── templates/         sct 通用模板（纯占位符，随工具分发）
-└── ico/
+├── ico/
     ├── parser.py          ICO 解析器（结构校验 + 格式识别）
     ├── generator.py       ICO 生成器（PNG → ICO，Pillow 可选）
     └── test_ico.py        解析/生成单测
+└── configgen/
+    ├── parser.py          CSP 派生输入解析（基线派生 + 差异覆盖 + 几何校验）
+    ├── generator.py       CSP 骨架渲染（chips/<id>.json + board_config.h，备份/dry-run）
+    ├── gui.py             tkinter 表单（与 CLI 同源业务函数，零业务逻辑）
+    └── test_configgen.py  派生/渲染/备份/退出码 + chipfill 闭环单测
 ```
 
 ## 开发环境与测试

@@ -2,6 +2,19 @@
 
 本项目的所有显著变更记录于此。格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [SemVer 2.0.0](https://semver.org/lang/zh-CN/)。
 
+## [1.1.0] - 2026-09-30
+
+### Added
+
+- **configgen/ 配置生成器（CLI + GUI）**：CSP 引导工具——从现有芯片派生新芯片
+  `chips/<id>.json` + `port/<family>/<id>/board_config.h` 骨架。基线派生 + 差异项覆盖
+  （分区/擦除单元/时钟/IWDG/引脚/服务开关）；几何校验与固件 `bl_storage` 运行期自检
+  同源（分区不出界不重叠、均匀表整除拼满、显式表求和、APP 首末边界与擦除单元重合）；
+  芯片事实不可派生字段（DFP flash_driver/register/sfd、F4 startup 与器件宏）写 TODO
+  占位强制人工核对，补全前不入构建链。写入前自动备份（`--no-backup`）、`--dry-run`
+  预览；CLI 与 tkinter GUI 同源业务函数（GUI 零业务逻辑）。单测 15 项
+  （`configgen/test_configgen.py`，含与 chipfill.load_chip 的跨仓闭环）。
+
 ## [1.0.0] - 2026-09-27
 
 首个公开发布版本。
