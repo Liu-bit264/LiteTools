@@ -2,7 +2,8 @@
 
 感谢关注 LiteTools！本仓是
 [LiteBootLoader](https://github.com/Liu-bit264/LiteBootLoader)（固件仓）家族的通用
-工程工具集（Keil 工程解析/生成、CSP 清单填充、ICO 解析/生成）。
+工程工具集（Keil 工程解析/生成、CSP 清单填充、ICO 解析/生成）。工具用法见
+[README.md](README.md)。
 
 ## 反馈 Bug
 
@@ -12,7 +13,23 @@
 2. 完整命令行与输出
 3. 期望行为与实际行为
 
-## 开发环境
+## 仓库结构
+
+```text
+LiteTools/
+├── uvprojx/
+│   ├── parser.py          Keil .uvprojx 解析器（工程 → JSON 规格）
+│   ├── generator.py       Keil .uvprojx 生成器（JSON 规格 → 工程，含更新模式）
+│   ├── chipfill.py        CSP 芯片清单填充器（chip.json + 模板 → spec/sct，ADR-015）
+│   ├── test_uvprojx.py    解析/生成往返等单测
+│   └── templates/         sct 通用模板（纯占位符，随工具分发）
+└── ico/
+    ├── parser.py          ICO 解析器（结构校验 + 格式识别）
+    ├── generator.py       ICO 生成器（PNG → ICO，Pillow 可选）
+    └── test_ico.py        解析/生成单测
+```
+
+## 开发环境与测试
 
 - 工具为纯标准库实现；Pillow 为 ICO 生成器的可选依赖（自动缩放用）
 - 单测直接运行（无需 pytest）：

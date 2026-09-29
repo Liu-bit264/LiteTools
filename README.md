@@ -7,23 +7,12 @@ LiteBootLoader 家族的通用工程工具：
 - [LiteBootLoader](../LiteBootLoader) —— STM32 BootLoader 框架（工具的主要使用方）
 - [LiteBootUpgrader](../LiteBootUpgrader) —— 串口升级上位机
 
-全部工具无第三方硬依赖（Pillow 可选，供 ICO 自动缩放），纯标准库 + uv 隔离运行约定。
-
-## 仓库结构
-
-```text
-LiteTools/
-├── uvprojx/
-│   ├── parser.py          Keil .uvprojx 解析器（工程 → JSON 规格）
-│   ├── generator.py       Keil .uvprojx 生成器（JSON 规格 → 工程，含更新模式）
-│   ├── chipfill.py        CSP 芯片清单填充器（chip.json + 模板 → spec/sct，ADR-015）
-│   ├── test_uvprojx.py    解析/生成往返等单测
-│   └── templates/         sct 通用模板（纯占位符，随工具分发）
-└── ico/
-    ├── parser.py          ICO 解析器（结构校验 + 格式识别）
-    ├── generator.py       ICO 生成器（PNG → ICO，Pillow 可选）
-    └── test_ico.py        解析/生成单测
-```
+工具分两组：`uvprojx/` 面向 Keil 工程（`parser.py` 工程 → JSON 规格、`generator.py`
+规格 → 工程、`chipfill.py` 芯片清单 + 模板 → spec/scatter，另有 `templates/` 通用 sct
+模板与 `test_uvprojx.py` 往返单测）；`ico/` 面向图标（`parser.py` 解析校验、
+`generator.py` PNG → ICO，另有 `test_ico.py` 单测）。每个工具都是单文件 CLI，纯标准库
+实现（Pillow 可选，供 ICO 自动缩放），无第三方硬依赖；单测运行方式见
+[CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ## uvprojx 工具
 
@@ -71,13 +60,10 @@ uv run --python 3.12 --with pillow ../LiteTools/ico/generator.py --sizes 16,32,4
 生成器优先 Pillow 缩放为 32bpp BMP-DIB，无 Pillow 时回退 PNG 直嵌（要求尺寸一一对应），
 写入前自校验、自动备份。
 
-## 测试
-
-```bash
-cd uvprojx && uv run --python 3.12 python test_uvprojx.py
-cd ico && uv run --python 3.12 python test_ico.py
-```
-
 ## 许可证
 
 [MIT](LICENSE) © 2026 Qingc。
+
+## 参与贡献
+
+反馈问题、提交 PR 与运行单测见 [CONTRIBUTING.md](CONTRIBUTING.md)。

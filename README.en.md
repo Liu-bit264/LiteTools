@@ -7,24 +7,13 @@ General-purpose project tools for the LiteBootLoader family:
 - [LiteBootLoader](../LiteBootLoader) — STM32 BootLoader framework (primary consumer of these tools)
 - [LiteBootUpgrader](../LiteBootUpgrader) — serial upgrade host tool
 
-All tools have no hard third-party dependencies (Pillow is optional, for automatic ICO
-scaling); pure standard library, with dependency-isolated execution recommended.
-
-## Repository Layout
-
-```text
-LiteTools/
-├── uvprojx/
-│   ├── parser.py          Keil .uvprojx parser (project → JSON spec)
-│   ├── generator.py       Keil .uvprojx generator (JSON spec → project, with update mode)
-│   ├── chipfill.py        CSP chip-manifest filler (chip.json + templates → spec/sct, ADR-015)
-│   ├── test_uvprojx.py    parse/generate round-trip unit tests
-│   └── templates/         generic sct templates (pure placeholders, shipped with the tools)
-└── ico/
-    ├── parser.py          ICO parser (structural validation + format identification)
-    ├── generator.py       ICO generator (PNG → ICO, Pillow optional)
-    └── test_ico.py        parse/generate unit tests
-```
+The tools come in two groups: `uvprojx/` covers Keil projects (`parser.py` project → JSON
+spec, `generator.py` spec → project, `chipfill.py` chip manifest + templates → spec/scatter,
+plus the generic `templates/` sct templates and the `test_uvprojx.py` round-trip tests);
+`ico/` covers icons (`parser.py` parsing/validation, `generator.py` PNG → ICO, plus
+`test_ico.py`). Every tool is a single-file CLI built on the pure standard library
+(Pillow optional, for automatic ICO scaling) with no hard third-party dependencies;
+how to run the tests is described in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## uvprojx Tools
 
@@ -78,13 +67,10 @@ ranges, and identifies PNG / BMP-DIB entries; the generator prefers Pillow for s
 32bpp BMP-DIB and falls back to direct PNG embedding without it (sizes must match
 one-to-one), self-validating and backing up before writing.
 
-## Testing
-
-```bash
-cd uvprojx && uv run --python 3.12 python test_uvprojx.py
-cd ico && uv run --python 3.12 python test_ico.py
-```
-
 ## License
 
 [MIT](LICENSE) © 2026 Qingc.
+
+## Contributing
+
+Issues, PRs and how to run the unit tests: [CONTRIBUTING.md](CONTRIBUTING.md).
