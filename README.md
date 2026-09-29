@@ -7,23 +7,13 @@ LiteBootLoader 家族的通用工程工具：
 - [LiteBootLoader](../LiteBootLoader) —— STM32 BootLoader 框架（工具的主要使用方）
 - [LiteBootUpgrader](../LiteBootUpgrader) —— 串口升级上位机
 
-全部工具无第三方硬依赖（Pillow 可选，供 ICO 自动缩放），纯标准库 + uv 隔离运行约定。
-
-## 仓库结构
-
-```text
-LiteTools/
-├── uvprojx/
-│   ├── parser.py          Keil .uvprojx 解析器（工程 → JSON 规格）
-│   ├── generator.py       Keil .uvprojx 生成器（JSON 规格 → 工程，含更新模式）
-│   ├── chipfill.py        CSP 芯片清单填充器（chip.json + 模板 → spec/sct，ADR-015）
-│   ├── test_uvprojx.py    解析/生成往返等单测
-│   └── templates/         sct 通用模板（纯占位符，随工具分发）
-└── ico/
-    ├── parser.py          ICO 解析器（结构校验 + 格式识别）
-    ├── generator.py       ICO 生成器（PNG → ICO，Pillow 可选）
-    └── test_ico.py        解析/生成单测
-```
+工具分两组：`uvprojx/` 面向 Keil 工程（`parser.py` 工程 → JSON 规格、`generator.py`
+规格 → 工程、`chipfill.py` 芯片清单 + 模板 → spec/scatter，另有 `templates/` 通用 sct
+模板与 `test_uvprojx.py` 往返单测）；`ico/` 面向图标（`parser.py` 解析校验、
+`generator.py` PNG → ICO，另有 `test_ico.py` 单测）。每个工具一个文件、纯标准库实现
+（Pillow 仅 ICO 生成器可选使用），无第三方硬依赖；两个 generator 运行时会读取同目录的
+`parser.py` 做写入前自校验，单独拷走一个文件会失效。单测运行方式见
+[CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ## uvprojx 工具
 
@@ -45,7 +35,9 @@ uv run --python 3.12 ../LiteTools/uvprojx/generator.py spec.json --update old.uv
 
 设备相关字段（FlashDriverDll/RegisterFile/SFDFile/CpuType/调试 DLL 参数）一律来自
 规格 `device` 字段（数据驱动，无设备名硬编码）；创建/更新模式均先自校验再写入，
-自动备份。生成结果需在 Keil uVision 中人工验证后再编译。
+自动备份。**规格缺 IRAM/IROM/CpuType 时会回退 F103C8 默认布局**（`_DEFAULT_MEMORY`），
+非 F1 芯片必须在 spec 中显式给出（CSP 流程由 chipfill 派生，不受影响）。
+生成结果需在 Keil uVision 中人工验证后再编译。
 
 ### chipfill.py — CSP 芯片清单填充（配合 LiteBootLoader）
 
@@ -56,14 +48,15 @@ uv run --python 3.12 ../LiteTools/uvprojx/chipfill.py \
     --spec-out bootloader.spec.json --sct-out linker/bootloader.sct
 ```
 
-占位符 `{{chip.a.b}}`（整值引用，列表/对象展开）与 `{"$chip": "a.b"}`（容器展开）；
+占位符 `{{chip.a.b}}`（整值引用：整个字符串恰为一个引用时取回原值整体放入；嵌在更长文本中时
+按标量替换）与 `{"$chip": "a.b"}`（容器展开：对象内联、列表中拼接）；
 派生 `derived.cpu_bootloader/cpu_app`（Keil Cpu 字符串：地址 8 位十六进制、尺寸去前导零）。
 详细字段约定见 LiteBootLoader 仓库 `docs/dev/design.md` ADR-015 与 `docs/porting_guide.md` §2。
 
 ## ICO 工具
 
 ```bash
-uv run --python 3.12 --with pillow ../LiteTools/ico/parser.py <文件.ico>
+uv run --python 3.12 ../LiteTools/ico/parser.py <文件.ico>
 uv run --python 3.12 --with pillow ../LiteTools/ico/generator.py --sizes 16,32,48,256 -o icon.ico icon.png
 ```
 
@@ -71,13 +64,10 @@ uv run --python 3.12 --with pillow ../LiteTools/ico/generator.py --sizes 16,32,4
 生成器优先 Pillow 缩放为 32bpp BMP-DIB，无 Pillow 时回退 PNG 直嵌（要求尺寸一一对应），
 写入前自校验、自动备份。
 
-## 测试
-
-```bash
-cd uvprojx && uv run --python 3.12 python test_uvprojx.py
-cd ico && uv run --python 3.12 python test_ico.py
-```
-
 ## 许可证
 
 [MIT](LICENSE) © 2026 Qingc。
+
+## 参与贡献
+
+反馈问题、提交 PR 与运行单测见 [CONTRIBUTING.md](CONTRIBUTING.md)。
