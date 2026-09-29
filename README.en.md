@@ -11,9 +11,11 @@ The tools come in two groups: `uvprojx/` covers Keil projects (`parser.py` proje
 spec, `generator.py` spec → project, `chipfill.py` chip manifest + templates → spec/scatter,
 plus the generic `templates/` sct templates and the `test_uvprojx.py` round-trip tests);
 `ico/` covers icons (`parser.py` parsing/validation, `generator.py` PNG → ICO, plus
-`test_ico.py`). Every tool is a single-file CLI built on the pure standard library
-(Pillow optional, for automatic ICO scaling) with no hard third-party dependencies;
-how to run the tests is described in [CONTRIBUTING.md](CONTRIBUTING.md).
+`test_ico.py`). Each tool is one file built on the pure standard library (Pillow is
+optional and used by the ICO generator only) with no hard third-party dependencies; both
+generators read the sibling `parser.py` at runtime to self-validate before writing, so
+copying a single file out of the repo breaks them. How to run the tests is described in
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## uvprojx Tools
 
@@ -36,8 +38,11 @@ uv run --python 3.12 ../LiteTools/uvprojx/generator.py spec.json --update old.uv
 
 Device-related fields (FlashDriverDll/RegisterFile/SFDFile/CpuType/debug DLL arguments)
 always come from the spec's `device` field (data-driven, no device-name hardcoding);
-create and update modes self-validate before writing and back up automatically. Verify
-generated projects in Keil uVision manually before building.
+create and update modes self-validate before writing and back up automatically. **When the
+spec omits IRAM/IROM/CpuType the generator falls back to the F103C8 defaults**
+(`_DEFAULT_MEMORY`), so non-F1 chips must state them explicitly (the CSP flow derives them
+via chipfill and is unaffected). Verify generated projects in Keil uVision manually before
+building.
 
 ### chipfill.py — CSP Chip-Manifest Filling (with LiteBootLoader)
 
@@ -49,8 +54,10 @@ uv run --python 3.12 ../LiteTools/uvprojx/chipfill.py \
     --spec-out bootloader.spec.json --sct-out linker/bootloader.sct
 ```
 
-Placeholders `{{chip.a.b}}` (whole-value reference, lists/objects expanded) and
-`{"$chip": "a.b"}` (container expansion); derives `derived.cpu_bootloader/cpu_app`
+Placeholders `{{chip.a.b}}` (whole-value reference: when the whole string is exactly one
+reference the value is inserted as-is; inside a longer string it degrades to scalar text
+substitution) and `{"$chip": "a.b"}` (container expansion: inlined into objects,
+concatenated inside lists); derives `derived.cpu_bootloader/cpu_app`
 (Keil Cpu strings: 8-digit hex addresses, leading zeros trimmed from sizes).
 Field conventions are documented in the LiteBootLoader repo's `docs/dev/design.md`
 ADR-015 and `docs/porting_guide.md` §2.
@@ -58,7 +65,7 @@ ADR-015 and `docs/porting_guide.md` §2.
 ## ICO Tools
 
 ```bash
-uv run --python 3.12 --with pillow ../LiteTools/ico/parser.py <file.ico>
+uv run --python 3.12 ../LiteTools/ico/parser.py <file.ico>
 uv run --python 3.12 --with pillow ../LiteTools/ico/generator.py --sizes 16,32,48,256 -o icon.ico icon.png
 ```
 

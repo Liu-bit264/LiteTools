@@ -45,7 +45,9 @@ LiteTools/
    发版时更新 CHANGELOG.md
 2. 改动解析/生成行为必须补对应单测（往返一致性、边界校验、恶意输入拒绝）
 3. 涉及 `chipfill.py` 的 chip.json schema 或模板约定变更时，需与固件仓联动回归：
-   本仓 `test_uvprojx.py` + 固件仓 `chips/test_chip.py` 双向通过
+   chipfill 的契约回归由固件仓 `chips/test_chip.py` 承担（内含 chipfill 往返与异常用例，
+   覆盖 `chips/*.json` 与已提交 spec/sct 的逐字节比对）；本仓 `test_uvprojx.py` 覆盖
+   parser / generator，改动这两者时须通过
 4. 生成器输出（`.uvprojx` / `.sct`）的格式变更请在 PR 中说明对既有产物的影响；
    生成结果需在 Keil uVision 中人工验证后才能作为交付依据
 
