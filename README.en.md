@@ -7,11 +7,13 @@ General-purpose project tools for the LiteBootLoader family:
 - [LiteBootLoader](../LiteBootLoader) — STM32 BootLoader framework (primary consumer of these tools)
 - [LiteBootUpgrader](../LiteBootUpgrader) — serial upgrade host tool
 
-The tools come in two groups: `uvprojx/` covers Keil projects (`parser.py` project → JSON
+The tools come in three groups: `uvprojx/` covers Keil projects (`parser.py` project → JSON
 spec, `generator.py` spec → project, `chipfill.py` chip manifest + templates → spec/scatter,
 plus the generic `templates/` sct templates and the `test_uvprojx.py` round-trip tests);
 `ico/` covers icons (`parser.py` parsing/validation, `generator.py` PNG → ICO, plus
-`test_ico.py`). Each tool is one file built on the pure standard library (Pillow is
+`test_ico.py`); `configgen/` bootstraps chip support packages (CSP) — it derives a
+`chips/<id>.json` + `board_config.h` skeleton from an existing chip, with matching CLI and
+tkinter GUI. Each tool is one directory built on the pure standard library (Pillow is
 optional and used by the ICO generator only) with no hard third-party dependencies; both
 generators read the sibling `parser.py` at runtime to self-validate before writing, so
 copying a single file out of the repo breaks them. How to run the tests is described in
@@ -73,6 +75,29 @@ The parser validates the ICO header (`00 00 01 00`), directory boundaries and en
 ranges, and identifies PNG / BMP-DIB entries; the generator prefers Pillow for scaling to
 32bpp BMP-DIB and falls back to direct PNG embedding without it (sizes must match
 one-to-one), self-validating and backing up before writing.
+
+## configgen — CSP Bootstrap Generator (CLI + GUI)
+
+Derives a new chip support package (CSP) skeleton from an existing chip, producing a
+`chips/<id>.json` + `port/<family>/<id>/board_config.h` pair; the partition/erase-unit
+geometry checks mirror the firmware `bl_storage` runtime self-check (APP boundaries must
+land on unit boundaries). Chip facts that cannot be derived (DFP flash_driver, startup
+file names, …) are emitted as TODO placeholders with forced attention notes.
+
+```bash
+# CLI: derive from f103c8t6 (run from the LiteBootLoader repo root)
+uv run --python 3.12 ../LiteTools/configgen/generator.py \
+    --from f103c8t6 --id f103rc --dry-run          # preview, writes nothing
+uv run --python 3.12 ../LiteTools/configgen/generator.py \
+    --from f411ceu6 --id f411ceu6x --app-base 0x08020000 \
+    --flash-size 0x000C0000 --erase-mode table     # override differences; auto-backup
+# GUI (tkinter, standard library)
+uv run --python 3.12 ../LiteTools/configgen/gui.py
+```
+
+Afterwards: fill the TODO placeholders → implement the port ops → run the firmware
+repo's `chips/test_chip.py` consistency tests → render/build via chipfill.
+Tests: `uv run --python 3.12 python configgen/test_configgen.py`.
 
 ## License
 

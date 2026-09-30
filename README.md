@@ -7,10 +7,12 @@ LiteBootLoader 家族的通用工程工具：
 - [LiteBootLoader](../LiteBootLoader) —— STM32 BootLoader 框架（工具的主要使用方）
 - [LiteBootUpgrader](../LiteBootUpgrader) —— 串口升级上位机
 
-工具分两组：`uvprojx/` 面向 Keil 工程（`parser.py` 工程 → JSON 规格、`generator.py`
+工具分三组：`uvprojx/` 面向 Keil 工程（`parser.py` 工程 → JSON 规格、`generator.py`
 规格 → 工程、`chipfill.py` 芯片清单 + 模板 → spec/scatter，另有 `templates/` 通用 sct
 模板与 `test_uvprojx.py` 往返单测）；`ico/` 面向图标（`parser.py` 解析校验、
-`generator.py` PNG → ICO，另有 `test_ico.py` 单测）。每个工具一个文件、纯标准库实现
+`generator.py` PNG → ICO，另有 `test_ico.py` 单测）；`configgen/` 面向芯片支持包
+（CSP）引导——从现有芯片派生 `chips/<id>.json` + `board_config.h` 骨架，CLI 与
+tkinter GUI 同源同构。每个工具一个目录、纯标准库实现
 （Pillow 仅 ICO 生成器可选使用），无第三方硬依赖；两个 generator 运行时会读取同目录的
 `parser.py` 做写入前自校验，单独拷走一个文件会失效。单测运行方式见
 [CONTRIBUTING.md](CONTRIBUTING.md)。
@@ -63,6 +65,27 @@ uv run --python 3.12 --with pillow ../LiteTools/ico/generator.py --sizes 16,32,4
 解析器校验 ICO 头（`00 00 01 00`）、目录边界与条目数据范围，识别 PNG / BMP-DIB 条目；
 生成器优先 Pillow 缩放为 32bpp BMP-DIB，无 Pillow 时回退 PNG 直嵌（要求尺寸一一对应），
 写入前自校验、自动备份。
+
+## configgen 配置生成器（CSP 引导，CLI + GUI）
+
+从现有芯片派生新芯片支持包（CSP）骨架，产出 `chips/<id>.json` + 
+`port/<family>/<id>/board_config.h` 两件套；分区/擦除单元几何校验与固件
+`bl_storage` 运行期自检同源（APP 首末边界必须与单元边界重合）。芯片事实无法
+派生的字段（DFP flash_driver、startup 文件名等）写 TODO 占位并强制提示。
+
+```bash
+# CLI：从 f103c8t6 派生（在 LiteBootLoader 仓库根运行）
+uv run --python 3.12 ../LiteTools/configgen/generator.py \
+    --from f103c8t6 --id f103rc --dry-run          # 预览，不写文件
+uv run --python 3.12 ../LiteTools/configgen/generator.py \
+    --from f411ceu6 --id f411ceu6x --app-base 0x08020000 \
+    --flash-size 0x000C0000 --erase-mode table     # 差异项覆盖，覆盖前自动备份
+# GUI（tkinter，标准库）
+uv run --python 3.12 ../LiteTools/configgen/gui.py
+```
+
+生成后流程：补全 TODO 占位 → 实现 port ops → 跑固件仓 `chips/test_chip.py` 一致性
+测试 → chipfill 渲染构建。单测：`uv run --python 3.12 python configgen/test_configgen.py`。
 
 ## 许可证
 
