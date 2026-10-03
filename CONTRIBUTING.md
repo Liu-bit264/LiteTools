@@ -2,8 +2,8 @@
 
 感谢关注 LiteTools！本仓是
 [LiteBootLoader](https://github.com/Liu-bit264/LiteBootLoader)（固件仓）家族的通用
-工程工具集（Keil 工程解析/生成、CSP 清单填充、ICO 解析/生成）。工具用法见
-[README.md](README.md)。
+工程工具集（Keil 工程解析/生成、CSP 清单填充、ICO 解析/生成、开发板引脚定义图制作）。
+工具用法见 [README.md](README.md)。
 
 ## 反馈 Bug
 
@@ -32,16 +32,33 @@ LiteTools/
     ├── generator.py       CSP 骨架渲染（chips/<id>.json + board_config.h，备份/dry-run）
     ├── gui.py             tkinter 表单（与 CLI 同源业务函数，零业务逻辑）
     └── test_configgen.py  派生/渲染/备份/退出码 + chipfill 闭环单测
+└── pinout/                C++/Qt6 大工具（CMake 构建，build/ 已忽略）
+    ├── CMakeLists.txt     qt_add_executable + qt_standard_project_setup + ctest 目标
+    ├── src/               工程模型(project)/布局(layout)/导出(exporter)/
+    │                      起始页(startpage)/主窗口(mainwindow)/画布(boardscene,
+    │                      boardview)/图元(pinitem)/属性面板(propspanel)/库管理(librarydlg)
+    └── tests/             Qt Test 离屏单测（project/layout/exporter）
 ```
 
 ## 开发环境与测试
 
-- 工具为纯标准库实现；Pillow 为 ICO 生成器的可选依赖（自动缩放用）
-- 单测直接运行（无需 pytest）：
+- 工具默认纯标准库 Python 实现；Pillow 为 ICO 生成器的可选依赖（自动缩放用）。
+  **大工具允许独立技术栈与第三方 UI 依赖**：`pinout/` 使用 C++20 + Qt6（≥6.8），
+  经 MSYS2 ucrt64 工具链构建（`pacman -S --needed mingw-w64-ucrt-x86_64-qt6-base
+  mingw-w64-ucrt-x86_64-qt6-tools mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja`）
+- Python 单测直接运行（无需 pytest）：
 
   ```bash
   cd uvprojx && uv run --python 3.12 python test_uvprojx.py
   cd ico && uv run --python 3.12 python test_ico.py
+  cd configgen && uv run --python 3.12 python test_configgen.py
+  ```
+
+- pinout 单测（CMake + ctest，离屏）：
+
+  ```bash
+  cd pinout && cmake -B build -G Ninja -DCMAKE_PREFIX_PATH=<ucrt64 前缀> \
+      && cmake --build build && ctest --test-dir build
   ```
 
 ## 提交 PR

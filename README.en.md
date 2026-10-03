@@ -7,14 +7,17 @@ General-purpose project tools for the LiteBootLoader family:
 - [LiteBootLoader](../LiteBootLoader) — STM32 BootLoader framework (primary consumer of these tools)
 - [LiteBootUpgrader](../LiteBootUpgrader) — serial upgrade host tool
 
-The tools come in three groups: `uvprojx/` covers Keil projects (`parser.py` project → JSON
+The tools come in four groups: `uvprojx/` covers Keil projects (`parser.py` project → JSON
 spec, `generator.py` spec → project, `chipfill.py` chip manifest + templates → spec/scatter,
 plus the generic `templates/` sct templates and the `test_uvprojx.py` round-trip tests);
 `ico/` covers icons (`parser.py` parsing/validation, `generator.py` PNG → ICO, plus
 `test_ico.py`); `configgen/` bootstraps chip support packages (CSP) — it derives a
 `chips/<id>.json` + `board_config.h` skeleton from an existing chip, with matching CLI and
-tkinter GUI. Each tool is one directory built on the pure standard library (Pillow is
-optional and used by the ICO generator only) with no hard third-party dependencies; both
+tkinter GUI; `pinout/` produces development-board pinout diagrams (a C++/Qt6 GUI with
+project management, five annotation tools, a reuse-definition library and high-res PNG
+export). Each tool is one directory; small tools stay on the pure Python standard library
+(Pillow is optional and used by the ICO generator only), while large GUI tools may use
+their own stack with third-party UI dependencies (`pinout/` is C++20 + Qt6). Both Python
 generators read the sibling `parser.py` at runtime to self-validate before writing, so
 copying a single file out of the repo breaks them. How to run the tests is described in
 [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -98,6 +101,45 @@ uv run --python 3.12 ../LiteTools/configgen/gui.py
 Afterwards: fill the TODO placeholders → implement the port ops → run the firmware
 repo's `chips/test_chip.py` consistency tests → render/build via chipfill.
 Tests: `uv run --python 3.12 python configgen/test_configgen.py`.
+
+## pinout — Board Pinout Diagram Tool (C++/Qt6)
+
+Project-based pin annotation: each task is a `.pinout.json` project created by importing a
+board photo; entering a project shows the board centered on a blueprint-grid canvas. Five
+tools — **single pin** (circular marker, crosshair follows the mouse with the marker center
+at the crosshair intersection), **multi pin** (click an anchor, pins extend up/down with
+equal spacing, Ctrl+wheel adjusts the spacing live, batch naming on confirm), **single
+header** (square), **multi header**, and **append reuse definition** (every definition you
+type joins the project-level reuse library; click a pin to append via inline autocomplete,
+or rubber-band several pins and batch-append from the properties panel). The properties
+panel edits name/side/name category/definition chain (names guess PA/PB/PC/GND/power
+category colors automatically); Ctrl+E exports a high-res PNG poster (centered board +
+definition chips chained with dashed leaders + a two-row legend).
+
+### Build (MSYS2 ucrt64 toolchain, Qt ≥ 6.8)
+
+```bash
+pacman -S --needed mingw-w64-ucrt-x86_64-qt6-base mingw-w64-ucrt-x86_64-qt6-tools \
+    mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja
+cd pinout
+cmake -B build -G Ninja -DCMAKE_PREFIX_PATH=E:/dev-tools/compilers/msy2/ucrt64
+cmake --build build
+ctest --test-dir build    # offscreen unit tests (project/layout/exporter)
+```
+
+### Run
+
+```bash
+PATH="E:/dev-tools/compilers/msy2/ucrt64/bin:$PATH" ./build/pinout.exe [project.pinout.json]
+# No argument opens the start page (new / open / recent projects)
+# Standalone distribution (optional): <ucrt64>/bin/windeployqt --release build\pinout.exe
+```
+
+### CLI export
+
+```bash
+./build/pinout.exe --export project.pinout.json [out.png] [scale]   # shares the exporter with the GUI; defaults to <project>.png at 2x
+```
 
 ## License
 
