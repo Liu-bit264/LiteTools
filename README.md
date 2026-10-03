@@ -115,7 +115,15 @@ ctest --test-dir build    # 离屏单测（project/layout/exporter 三组）
 ```bash
 PATH="E:/dev-tools/compilers/msy2/ucrt64/bin:$PATH" ./build/pinout.exe [工程.pinout.json]
 # 无参数先弹起始页（新建/打开/最近工程）
-# 独立分发（可选）：<ucrt64>/bin/windeployqt --release build\pinout.exe
+```
+
+**双击直启（独立分发）**：需先把运行库部署到 exe 旁，否则会从 PATH 翻到不兼容副本报
+「无法定位程序输入点」：
+
+```bash
+<ucrt64>/bin/windeployqt --release --compiler-runtime build/pinout.exe
+# MinGW 版 windeployqt 不复制编译器运行库，需再手动拷贝 ucrt64/bin 下的：
+#   libstdc++-6.dll  libgcc_s_seh-1.dll  libwinpthread-1.dll   （zlib1.dll 已随 Qt 部署）
 ```
 
 ### CLI 导出

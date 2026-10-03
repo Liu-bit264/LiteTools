@@ -132,7 +132,15 @@ ctest --test-dir build    # offscreen unit tests (project/layout/exporter)
 ```bash
 PATH="E:/dev-tools/compilers/msy2/ucrt64/bin:$PATH" ./build/pinout.exe [project.pinout.json]
 # No argument opens the start page (new / open / recent projects)
-# Standalone distribution (optional): <ucrt64>/bin/windeployqt --release build\pinout.exe
+```
+
+**Standalone double-click launch**: deploy the runtime DLLs next to the exe first, otherwise
+Windows may load an incompatible copy from PATH and fail with "entry point not found":
+
+```bash
+<ucrt64>/bin/windeployqt --release --compiler-runtime build/pinout.exe
+# The MinGW windeployqt does NOT copy the compiler runtime; also copy from ucrt64/bin:
+#   libstdc++-6.dll  libgcc_s_seh-1.dll  libwinpthread-1.dll   (zlib1.dll ships with Qt)
 ```
 
 ### CLI export
