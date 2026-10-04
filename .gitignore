@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 
+# ---- C++/Qt（pinout） ----
+*.user
+*.autosave
+
 # ---- 构建产物 ----
 build/
 dist/
